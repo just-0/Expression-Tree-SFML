@@ -1,5 +1,7 @@
 #include<iostream>
 #include<queue>
+#include<vector>
+#include<cmath>
 #include <SFML/Graphics.hpp>
 using namespace std;
 
@@ -21,35 +23,86 @@ struct ArNode
    
 
     
-    ArNode(char _v, int x, int y): shape(30.f), LineLeft(sf::Vector2f(70.f, 5.f)), LineRight(sf::Vector2f(70.f, 5.f))
+    ArNode(char _v): shape(30.f), LineLeft(sf::Vector2f(70.f, 5.f)), LineRight(sf::Vector2f(70.f, 5.f))
     {
         //x = 200; y = 50
-        this->x = x; this->y = y;
+        this->x = 0; this->y = 0;
         value = _v; nodes[0] = nodes[1] = 0;
 
        
         shape.setFillColor(sf::Color::Green);
-        shape.setPosition(x,y);
+        
 
         font.loadFromFile("Bubble Mint.otf");
 
-        text.setFont(font); 
+        
         text.setString(_v);
         text.setCharacterSize(50);
         text.setFillColor(sf::Color::Blue);
-        text.setPosition(x+18,y-5);
        
-        LineRight.rotate(45.f);
-        LineLeft.rotate(45+90.f);
-        LineRight.setPosition(x+33,y+58);
-        LineLeft.setPosition(x+33,y+58);
+      
+        
+    }
+    void Sets()
+    {
+        text.setFont(font); 
+        text.setPosition(x+18,y-5);
+
+        shape.setPosition(this->x,this->y);
+        
+        
+        
+        
+    }   
+    void SetsLines()
+    {
+        
+
+        
+        if(nodes[0])
+        {
+            LineLeft.setPosition(x+33,y+58);
+           // cout<<180/M_PI*ata    n(x-nodes[0]->x )/(nodes[0]->y - y)<<endl;
+            LineLeft.rotate(180/M_PI*atan(( x-nodes[0]->x )/(nodes[0]->y - y) )+90);
+            
+            LineLeft.setSize(sf::Vector2f(sqrt(pow(x- nodes[0]->x, 2)+ pow(nodes[0]->y-y,2)), 5.f));
+        }
+        if(nodes[1])
+        {
+            float c = sqrt(pow(nodes[1]->x - x, 2)+ pow(nodes[1]->y-y,2));
+            float b = nodes[1]->x -x;
+            //cout<<90-180/M_PI*(atan((nodes[1]->x - x)/(nodes[1]->y - y)))<<"  ->  "<<(nodes[1]->x - x)<<" - "<<(nodes[1]->y - y)<<endl;
+            LineRight.setPosition(x+33,y+58);
+            //                                atan(( x-nodes[0]->x )/(nodes[0]->y - y) )+90
+            float rotacion = 90-180/M_PI*(asin(b/c ));
+            //cout<<nodes[1]->x<<" - " <<x<<endl;
+            cout<<"-> "<<rotacion<<endl;
+            
+            LineRight.rotate(rotacion);
+            LineRight.setSize(sf::Vector2f(c, 5.f));
+            
+        }
     }
     void DrawNode(sf::RenderWindow &a)
-    {
-            a.draw((shape));
-            a.draw((text));
-            if(nodes[0])a.draw((LineLeft));
-            if(nodes[1])a.draw((LineRight));
+    {       
+
+        
+
+        
+        
+        if(nodes[0])
+        {
+            
+            a.draw((LineLeft));
+            
+        }
+        if(nodes[1])
+        {
+            
+            a.draw((LineRight));
+        }
+        a.draw((shape));
+        a.draw((text));
     }
 };
 
@@ -57,32 +110,32 @@ struct ArTree
 {
     ArNode* root;
     sf::RenderWindow window;
-    ArTree():window(sf::VideoMode(900, 900), "Arbol Aritmetico!")
+    ArTree():window(sf::VideoMode(1500, 900), "Arbol Aritmetico!")
     {
         window.setFramerateLimit(60);
         root = 0;
     }
-    void InOrder(ArNode* n)
+    void InOrder(ArNode* n, vector<ArNode*> &a)
     {
         if (!n) return;
 
-        InOrder(n->nodes[0]);
-        cout << n->value << "-";
-        InOrder(n->nodes[1]);
+        InOrder(n->nodes[0],a);
+        a.push_back(n);
+        InOrder(n->nodes[1], a);
     }
-    void PreOrder(ArNode* n)
+    void PreOrder(ArNode* n,vector<ArNode*> &a)
     {
         if (!n) return;
-        cout << n->value << "-";
-        PreOrder(n->nodes[0]);
-        PreOrder(n->nodes[1]);
+        a.push_back(n);
+        PreOrder(n->nodes[0],a);
+        PreOrder(n->nodes[1], a);
     }
     void PostOrder(ArNode* n)
     {
         if (!n) return;
 
-        PreOrder(n->nodes[0]);
-        PreOrder(n->nodes[1]);
+        PostOrder(n->nodes[0]);
+        PostOrder(n->nodes[1]);
         cout << n->value << "-";
     }
     void Profundidad(ArNode*n)
@@ -95,7 +148,7 @@ struct ArTree
         {
             if(q.front()->nodes[0])q.push(q.front()->nodes[0]);
             if(q.front()->nodes[1])q.push(q.front()->nodes[1]);
-            cout<<q.front()->value;
+            
             q.front()->DrawNode(window);
             q.pop();
         }
@@ -120,9 +173,39 @@ struct ArTree
         
         cout << endl;
     }   
+    void LogicNodePosition()
+    {
+        vector<ArNode*> inorder;
+        vector<ArNode*> preorder;
+        
+        InOrder(root,inorder);
+        PreOrder(root,preorder);
 
+        
+        
+        for (int i = 0; i  < inorder.size(); i++)
+        {
+            int j = 0;
+            for(; ref(inorder[i]) != ref(preorder[j])  && j < preorder.size(); j++);
+            
+            inorder[i]->x = (i+1)*70;
+            
+            inorder[i]->y = (j+1)*70;
+            
+            inorder[i]->Sets();
+        }
+        for (int i = 0; i  < inorder.size(); i++)
+        {
+            preorder[i]->SetsLines();
+        }
+
+    }
     void Draw()
     {
+
+        LogicNodePosition();
+
+        
         while (window.isOpen())
         {
             
@@ -202,21 +285,21 @@ string AsingRight(string a, int p)
     return returner;
 }
 //2+3
-string a1(string a,ArNode *&root, int x, int y)
+string a1(string a,ArNode *&root)
 {
     int tamanho = a.size();
     if(tamanho == 1)
     {
-        root = new ArNode(a[0], x , y);
+        root = new ArNode(a[0]);
         return a;
     }
     int i = SearchOp(a);
     string left = AsingLeft(a,i);
     string right = AsingRight(a,i);
 
-    root = new ArNode(a[i], x,y);
-    a1(left,root->nodes[0],x-50,y+50+50);
-    a1(right,root->nodes[1],x+50,y+50+50);
+    root = new ArNode(a[i]);
+    a1(left,root->nodes[0]);
+    a1(right,root->nodes[1]);
     return "xd"; 
 }
 
@@ -245,4 +328,3 @@ g++ -Wall $1.o -o sfml-app -L/usr/include/SFML/lib -lsfml-graphics -lsfml-window
 ./sfml-app
 
 */
-
